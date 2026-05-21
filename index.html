@@ -4,10 +4,18 @@
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0, user-scalable=no">
 
-<title>RC CAR</title>
+<meta
+name="viewport"
+content="
+width=device-width,
+height=device-height,
+initial-scale=1.0,
+maximum-scale=1.0,
+user-scalable=no
+">
+
+<title>ESP32 RC CAR</title>
 
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
@@ -26,22 +34,26 @@ content="width=device-width, initial-scale=1.0, user-scalable=no">
 
 body{
 
-  background:#111;
-  color:white;
-
-  font-family:sans-serif;
-
   width:100vw;
   height:100vh;
 
   overflow:hidden;
 
+  background:#111;
+
+  color:white;
+
+  font-family:
+  Arial,
+  sans-serif;
+
   display:flex;
   flex-direction:row;
-
 }
 
-/* LEFT SIDE */
+/* =========================
+   LEFT PANEL
+========================= */
 
 .left-panel{
 
@@ -52,9 +64,69 @@ body{
   justify-content:center;
   align-items:center;
 
+  position:relative;
 }
 
-/* RIGHT SIDE */
+/* =========================
+   THROTTLE
+========================= */
+
+.throttle-container{
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  width:100%;
+  height:100%;
+}
+
+#throttle{
+
+  appearance:none;
+  -webkit-appearance:none;
+
+  width:320px;
+  height:70px;
+
+  transform:rotate(-90deg);
+
+  background:transparent;
+}
+
+/* TRACK */
+
+#throttle::-webkit-slider-runnable-track{
+
+  height:18px;
+
+  background:#333;
+
+  border-radius:20px;
+}
+
+/* THUMB */
+
+#throttle::-webkit-slider-thumb{
+
+  -webkit-appearance:none;
+
+  width:70px;
+  height:70px;
+
+  border-radius:50%;
+
+  background:#00bfff;
+
+  margin-top:-26px;
+
+  box-shadow:
+  0 0 20px rgba(0,191,255,0.5);
+}
+
+/* =========================
+   RIGHT PANEL
+========================= */
 
 .right-panel{
 
@@ -64,91 +136,85 @@ body{
   display:flex;
   justify-content:center;
   align-items:center;
-
 }
 
-/* D-PAD */
+/* =========================
+   STEERING
+========================= */
 
-.dpad{
+.steering{
+
+  width:260px;
+  height:260px;
 
   position:relative;
-
-  width:240px;
-  height:240px;
-
 }
 
 .btn{
 
   position:absolute;
 
-  width:90px;
-  height:90px;
+  width:110px;
+  height:110px;
 
   border:none;
-  border-radius:24px;
+  border-radius:28px;
 
-  background:#2b2b2b;
+  background:#2a2a2a;
 
   color:white;
 
-  font-size:22px;
+  font-size:42px;
   font-weight:bold;
 
   box-shadow:
-  0 4px 10px rgba(0,0,0,0.4);
+  0 6px 16px rgba(0,0,0,0.45);
 
   transition:
   transform 0.05s,
   background 0.1s;
-
 }
 
 .btn:active{
 
   transform:scale(0.94);
 
-  background:#4a4a4a;
+  background:#444;
 }
 
-/* POSITIONS */
-
-.up{
-  top:0;
-  left:75px;
-}
-
-.down{
-  bottom:0;
-  left:75px;
-}
+/* LEFT */
 
 .left{
+
   left:0;
   top:75px;
 }
 
+/* RIGHT */
+
 .right{
+
   right:0;
   top:75px;
 }
 
-/* LABEL */
+/* LABELS */
 
-.title{
+.label{
 
   position:absolute;
 
-  top:14px;
-  left:50%;
+  top:18px;
 
-  transform:translateX(-50%);
+  width:100%;
 
-  font-size:18px;
+  text-align:center;
 
-  color:#888;
+  color:#777;
 
   letter-spacing:3px;
+
+  font-size:18px;
 }
 
 </style>
@@ -157,49 +223,49 @@ body{
 
 <body>
 
-<div class="title">
-RC CAR CONTROL
-</div>
+<!-- =========================
+     LEFT PANEL
+========================= -->
 
-<!-- LEFT SIDE -->
 <div class="left-panel">
 
-  <div class="dpad">
+  <div class="label">
+    THROTTLE
+  </div>
 
-    <button
-    class="btn up"
+  <div class="throttle-container">
 
-    ontouchstart="send('forward_on')"
-    ontouchend="send('forward_off')"
+    <input
+    type="range"
 
-    onmousedown="send('forward_on')"
-    onmouseup="send('forward_off')"
+    min="-100"
+    max="100"
+
+    value="0"
+
+    id="throttle"
     >
-    ▲
-    </button>
-
-    <button
-    class="btn down"
-
-    ontouchstart="send('backward_on')"
-    ontouchend="send('backward_off')"
-
-    onmousedown="send('backward_on')"
-    onmouseup="send('backward_off')"
-    >
-    ▼
-    </button>
 
   </div>
 
 </div>
 
-<!-- RIGHT SIDE -->
+<!-- =========================
+     RIGHT PANEL
+========================= -->
+
 <div class="right-panel">
 
-  <div class="dpad">
+  <div class="label">
+    STEERING
+  </div>
+
+  <div class="steering">
+
+    <!-- LEFT -->
 
     <button
+
     class="btn left"
 
     ontouchstart="send('left_on')"
@@ -207,11 +273,15 @@ RC CAR CONTROL
 
     onmousedown="send('left_on')"
     onmouseup="send('left_off')"
+
     >
     ◀
     </button>
 
+    <!-- RIGHT -->
+
     <button
+
     class="btn right"
 
     ontouchstart="send('right_on')"
@@ -219,6 +289,7 @@ RC CAR CONTROL
 
     onmousedown="send('right_on')"
     onmouseup="send('right_off')"
+
     >
     ▶
     </button>
@@ -229,41 +300,115 @@ RC CAR CONTROL
 
 <script>
 
-const client = mqtt.connect(
+/* =========================
+   MQTT
+========================= */
+
+const client =
+mqtt.connect(
 'wss://broker.hivemq.com:8884/mqtt'
 );
 
-client.on('connect', ()=>{
+client.on(
+'connect',
+()=>{
 
-  console.log('MQTT Connected');
+  console.log(
+    'MQTT Connected'
+  );
 
 });
+
+/* =========================
+   TOPICS
+========================= */
+
+const TOPIC_CONTROL =
+'fungcar/control';
+
+const TOPIC_THROTTLE =
+'fungcar/throttle';
+
+/* =========================
+   SEND CONTROL
+========================= */
 
 function send(msg){
 
   client.publish(
-    'fungcar/control',
+    TOPIC_CONTROL,
     msg
   );
 
   console.log(msg);
 }
 
-/* SAFETY STOP */
+/* =========================
+   THROTTLE
+========================= */
 
-window.addEventListener('touchend', ()=>{
+const throttle =
+document.getElementById(
+'throttle'
+);
 
-  send('forward_off');
-  send('backward_off');
+/* SEND PWM VALUE */
+
+throttle.addEventListener(
+'input',
+()=>{
+
+  let val =
+  throttle.value;
+
+  client.publish(
+    TOPIC_THROTTLE,
+    val.toString()
+  );
+
+});
+
+/* AUTO RETURN CENTER */
+
+function resetThrottle(){
+
+  throttle.value = 0;
+
+  client.publish(
+    TOPIC_THROTTLE,
+    '0'
+  );
+}
+
+/* RELEASE */
+
+throttle.addEventListener(
+'mouseup',
+resetThrottle
+);
+
+throttle.addEventListener(
+'touchend',
+resetThrottle
+);
+
+/* =========================
+   SAFETY STOP
+========================= */
+
+window.addEventListener(
+'touchend',
+()=>{
+
   send('left_off');
   send('right_off');
 
 });
 
-window.addEventListener('mouseup', ()=>{
+window.addEventListener(
+'mouseup',
+()=>{
 
-  send('forward_off');
-  send('backward_off');
   send('left_off');
   send('right_off');
 
