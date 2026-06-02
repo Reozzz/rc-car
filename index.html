@@ -3,34 +3,25 @@
 
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport"
+content="width=device-width,initial-scale=1,user-scalable=no">
 
-<title>ESP32 Excavator Remote</title>
+<title>Excavator Remote</title>
 
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
 <style>
 
 body{
-    font-family: Arial;
-    text-align: center;
-    margin: 10px;
-}
-
-h3{
-    margin-top: 25px;
-}
-
-button{
-    width: 140px;
-    height: 80px;
-    margin: 5px;
-    font-size: 20px;
+    margin:0;
+    font-family:Arial;
+    background:#f5f5f5;
+    text-align:center;
 }
 
 #status{
+    padding:10px;
     font-size:20px;
-    margin:15px;
     font-weight:bold;
 }
 
@@ -42,79 +33,208 @@ button{
     color:red;
 }
 
+.main{
+    display:flex;
+    justify-content:center;
+    gap:30px;
+    margin-top:10px;
+}
+
+.joystick{
+    width:280px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:90px 90px 90px;
+    grid-template-rows:90px 90px 90px;
+    gap:5px;
+    justify-content:center;
+}
+
+button{
+    font-size:18px;
+    border:none;
+    border-radius:12px;
+    background:#ffffff;
+    box-shadow:0 2px 6px rgba(0,0,0,0.2);
+}
+
+button:active{
+    background:#d0e6ff;
+}
+
+.empty{
+    visibility:hidden;
+}
+
+.trackRow{
+    display:flex;
+    justify-content:center;
+    gap:15px;
+    margin-top:25px;
+}
+
+.trackGroup{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.trackGroup button{
+    width:180px;
+    height:70px;
+}
+
+.bucket{
+    margin-top:25px;
+}
+
+.bucket button{
+    width:380px;
+    height:70px;
+    margin:5px;
+}
+
 </style>
 
 </head>
 
 <body>
 
-<h2>ESP32 Excavator Remote</h2>
-
 <div id="status" class="disconnected">
 MQTT Connecting...
 </div>
 
-<h3>Left Track</h3>
+<div class="main">
 
-<button id="lf">Forward</button>
-<button id="lb">Backward</button>
+    <!-- LEFT JOYSTICK -->
 
-<h3>Right Track</h3>
+    <div class="joystick">
 
-<button id="rf">Forward</button>
-<button id="rb">Backward</button>
+        <h3>Turret / Left Functions</h3>
 
-<h3>Turret</h3>
+        <div class="grid">
 
-<button id="tl">Left</button>
-<button id="tr">Right</button>
+            <div class="empty"></div>
+            <button id="tl">↺</button>
+            <div class="empty"></div>
 
-<h3>Main Arm</h3>
+            <button id="lf">▲</button>
+            <div class="empty"></div>
+            <button id="lb">▼</button>
 
-<button id="au">UP</button>
-<button id="ad">DOWN</button>
+            <div class="empty"></div>
+            <button id="tr">↻</button>
+            <div class="empty"></div>
 
-<h3>Stick Arm</h3>
+        </div>
 
-<button id="su">UP</button>
-<button id="sd">DOWN</button>
+    </div>
 
-<h3>Bucket</h3>
+    <!-- RIGHT JOYSTICK -->
 
-<button id="bu">UP</button>
-<button id="bd">DOWN</button>
+    <div class="joystick">
+
+        <h3>Arm / Stick</h3>
+
+        <div class="grid">
+
+            <div class="empty"></div>
+            <button id="au">▲</button>
+            <div class="empty"></div>
+
+            <button id="su">◀</button>
+            <div class="empty"></div>
+            <button id="sd">▶</button>
+
+            <div class="empty"></div>
+            <button id="ad">▼</button>
+            <div class="empty"></div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- TRACKS -->
+
+<div class="trackRow">
+
+    <div class="trackGroup">
+
+        <h3>Left Track</h3>
+
+        <button id="leftForward">
+            Forward
+        </button>
+
+        <button id="leftBackward">
+            Backward
+        </button>
+
+    </div>
+
+    <div class="trackGroup">
+
+        <h3>Right Track</h3>
+
+        <button id="rightForward">
+            Forward
+        </button>
+
+        <button id="rightBackward">
+            Backward
+        </button>
+
+    </div>
+
+</div>
+
+<!-- BUCKET -->
+
+<div class="bucket">
+
+    <h3>Bucket</h3>
+
+    <button id="bu">
+        Bucket Up
+    </button>
+
+    <br>
+
+    <button id="bd">
+        Bucket Down
+    </button>
+
+</div>
 
 <script>
 
-// MQTT Broker
-const client = mqtt.connect(
-    'wss://broker.hivemq.com:8884/mqtt'
+const client =
+mqtt.connect(
+'wss://broker.hivemq.com:8884/mqtt'
 );
 
-// 儲存每個按鈕 Timer
 const timers = {};
 
-// MQTT Connected
-client.on('connect', () => {
+client.on('connect',()=>{
 
-    console.log("MQTT Connected");
+    const s=document.getElementById("status");
 
-    const status = document.getElementById("status");
-
-    status.innerHTML = "MQTT Connected";
-    status.className = "connected";
+    s.innerHTML="MQTT Connected";
+    s.className="connected";
 });
 
-// MQTT Lost
-client.on('close', () => {
+client.on('close',()=>{
 
-    const status = document.getElementById("status");
+    const s=document.getElementById("status");
 
-    status.innerHTML = "MQTT Disconnected";
-    status.className = "disconnected";
+    s.innerHTML="MQTT Disconnected";
+    s.className="disconnected";
 });
 
-// Publish
 function publish(topic,value)
 {
     if(client.connected)
@@ -123,132 +243,61 @@ function publish(topic,value)
     }
 }
 
-// 綁定按鈕
-function bind(buttonId, topic)
+function bind(id,topic)
 {
-    const btn = document.getElementById(buttonId);
+    const btn=document.getElementById(id);
 
     function start()
     {
         publish(topic,"1");
 
-        if(timers[buttonId])
-        {
-            clearInterval(timers[buttonId]);
-        }
-
-        timers[buttonId] = setInterval(() => {
-
+        timers[id]=setInterval(()=>{
             publish(topic,"1");
-
         },200);
     }
 
     function stop()
     {
-        if(timers[buttonId])
-        {
-            clearInterval(timers[buttonId]);
-            timers[buttonId] = null;
-        }
-
+        clearInterval(timers[id]);
         publish(topic,"0");
     }
 
-    btn.addEventListener("pointerdown", start);
-
-    btn.addEventListener("pointerup", stop);
-
-    btn.addEventListener("pointerleave", stop);
-
-    btn.addEventListener("pointercancel", stop);
-
-    btn.addEventListener("touchend", stop);
+    btn.addEventListener("pointerdown",start);
+    btn.addEventListener("pointerup",stop);
+    btn.addEventListener("pointerleave",stop);
+    btn.addEventListener("pointercancel",stop);
+    btn.addEventListener("touchend",stop);
 }
 
-//====================
-// Left Track
-//====================
+/* Turret */
 
-bind(
-    "lf",
-    "excavator/left/fwd"
-);
+bind("tl","excavator/turret/left");
+bind("tr","excavator/turret/right");
 
-bind(
-    "lb",
-    "excavator/left/rev"
-);
+/* Arm */
 
-//====================
-// Right Track
-//====================
+bind("au","excavator/arm/up");
+bind("ad","excavator/arm/down");
 
-bind(
-    "rf",
-    "excavator/right/fwd"
-);
+/* Stick */
 
-bind(
-    "rb",
-    "excavator/right/rev"
-);
+bind("su","excavator/stick/up");
+bind("sd","excavator/stick/down");
 
-//====================
-// Turret
-//====================
+/* Bucket */
 
-bind(
-    "tl",
-    "excavator/turret/left"
-);
+bind("bu","excavator/bucket/up");
+bind("bd","excavator/bucket/down");
 
-bind(
-    "tr",
-    "excavator/turret/right"
-);
+/* Left Track */
 
-//====================
-// Main Arm
-//====================
+bind("leftForward","excavator/left/fwd");
+bind("leftBackward","excavator/left/rev");
 
-bind(
-    "au",
-    "excavator/arm/up"
-);
+/* Right Track */
 
-bind(
-    "ad",
-    "excavator/arm/down"
-);
-
-//====================
-// Stick Arm
-//====================
-
-bind(
-    "su",
-    "excavator/stick/up"
-);
-
-bind(
-    "sd",
-    "excavator/stick/down"
-);
-
-//====================
-// Bucket
-//====================
-
-bind(
-    "bu",
-    "excavator/bucket/up"
-);
-
-bind(
-    "bd",
-    "excavator/bucket/down"
-);
+bind("rightForward","excavator/right/fwd");
+bind("rightBackward","excavator/right/rev");
 
 </script>
 
