@@ -1,421 +1,112 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html>
 <head>
-
-<meta charset="UTF-8">
-
-<meta
-name="viewport"
-content="
-width=device-width,
-height=device-height,
-initial-scale=1.0,
-maximum-scale=1.0,
-user-scalable=no
-">
-
-<title>ESP32 RC CAR</title>
+<meta charset="utf-8">
+<title>Excavator Remote</title>
 
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
 <style>
-
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-
-  -webkit-user-select:none;
-  user-select:none;
-
-  -webkit-touch-callout:none;
-}
-
 body{
-
-  width:100vw;
-  height:100vh;
-
-  overflow:hidden;
-
-  background:#111;
-
-  color:white;
-
-  font-family:
-  Arial,
-  sans-serif;
-
-  display:flex;
-  flex-direction:row;
+    font-family:Arial;
+    text-align:center;
 }
 
-/* =========================
-   LEFT PANEL
-========================= */
-
-.left-panel{
-
-  width:50%;
-  height:100%;
-
-  display:flex;
-  justify-content:center;
-  align-items:center;
-
-  position:relative;
+button{
+    width:120px;
+    height:80px;
+    margin:4px;
+    font-size:18px;
 }
-
-/* =========================
-   THROTTLE
-========================= */
-
-.throttle-container{
-
-  display:flex;
-  justify-content:center;
-  align-items:center;
-
-  width:100%;
-  height:100%;
-}
-
-#throttle{
-
-  appearance:none;
-  -webkit-appearance:none;
-
-  width:320px;
-  height:70px;
-
-  transform:rotate(-90deg);
-
-  background:transparent;
-}
-
-/* TRACK */
-
-#throttle::-webkit-slider-runnable-track{
-
-  height:18px;
-
-  background:#333;
-
-  border-radius:20px;
-}
-
-/* THUMB */
-
-#throttle::-webkit-slider-thumb{
-
-  -webkit-appearance:none;
-
-  width:70px;
-  height:70px;
-
-  border-radius:50%;
-
-  background:#00bfff;
-
-  margin-top:-26px;
-
-  box-shadow:
-  0 0 20px rgba(0,191,255,0.5);
-}
-
-/* =========================
-   RIGHT PANEL
-========================= */
-
-.right-panel{
-
-  width:50%;
-  height:100%;
-
-  display:flex;
-  justify-content:center;
-  align-items:center;
-}
-
-/* =========================
-   STEERING
-========================= */
-
-.steering{
-
-  width:260px;
-  height:260px;
-
-  position:relative;
-}
-
-.btn{
-
-  position:absolute;
-
-  width:110px;
-  height:110px;
-
-  border:none;
-  border-radius:28px;
-
-  background:#2a2a2a;
-
-  color:white;
-
-  font-size:42px;
-  font-weight:bold;
-
-  box-shadow:
-  0 6px 16px rgba(0,0,0,0.45);
-
-  transition:
-  transform 0.05s,
-  background 0.1s;
-}
-
-.btn:active{
-
-  transform:scale(0.94);
-
-  background:#444;
-}
-
-/* LEFT */
-
-.left{
-
-  left:0;
-  top:75px;
-}
-
-/* RIGHT */
-
-.right{
-
-  right:0;
-  top:75px;
-}
-
-/* LABELS */
-
-.label{
-
-  position:absolute;
-
-  top:18px;
-
-  width:100%;
-
-  text-align:center;
-
-  color:#777;
-
-  letter-spacing:3px;
-
-  font-size:18px;
-}
-
 </style>
-
 </head>
-
 <body>
 
-<!-- =========================
-     LEFT PANEL
-========================= -->
+<h2>Excavator Control</h2>
 
-<div class="left-panel">
-
-  <div class="label">
-    THROTTLE
-  </div>
-
-  <div class="throttle-container">
-
-    <input
-    type="range"
-
-    min="-100"
-    max="100"
-
-    value="0"
-
-    id="throttle"
-    >
-
-  </div>
-
-</div>
-
-<!-- =========================
-     RIGHT PANEL
-========================= -->
-
-<div class="right-panel">
-
-  <div class="label">
-    STEERING
-  </div>
-
-  <div class="steering">
-
-    <!-- LEFT -->
-
-    <button
-
-    class="btn left"
-
-    ontouchstart="send('left_on')"
-    ontouchend="send('left_off')"
-
-    onmousedown="send('left_on')"
-    onmouseup="send('left_off')"
-
-    >
-    ◀
-    </button>
-
-    <!-- RIGHT -->
-
-    <button
-
-    class="btn right"
-
-    ontouchstart="send('right_on')"
-    ontouchend="send('right_off')"
-
-    onmousedown="send('right_on')"
-    onmouseup="send('right_off')"
-
-    >
-    ▶
-    </button>
-
-  </div>
-
-</div>
+<div id="status">Connecting...</div>
 
 <script>
 
-/* =========================
-   MQTT
-========================= */
-
-const client =
-mqtt.connect(
+const client = mqtt.connect(
 'wss://broker.hivemq.com:8884/mqtt'
 );
 
-client.on(
-'connect',
-()=>{
-
-  console.log(
-    'MQTT Connected'
-  );
-
+client.on('connect',()=>{
+    document.getElementById("status").innerHTML =
+      "MQTT Connected";
 });
 
-/* =========================
-   TOPICS
-========================= */
+function bind(btnId,topic)
+{
+  const btn=document.getElementById(btnId);
 
-const TOPIC_CONTROL =
-'fungcar/control';
+  btn.onpointerdown=()=>{
+      client.publish(topic,"1");
+  };
 
-const TOPIC_THROTTLE =
-'fungcar/throttle';
+  btn.onpointerup=()=>{
+      client.publish(topic,"0");
+  };
 
-/* =========================
-   SEND CONTROL
-========================= */
-
-function send(msg){
-
-  client.publish(
-    TOPIC_CONTROL,
-    msg
-  );
-
-  console.log(msg);
+  btn.onpointerleave=()=>{
+      client.publish(topic,"0");
+  };
 }
 
-/* =========================
-   THROTTLE
-========================= */
+</script>
 
-const throttle =
-document.getElementById(
-'throttle'
-);
+<h3>Left Track</h3>
 
-/* SEND PWM VALUE */
+<button id="lf">Forward</button>
+<button id="lb">Backward</button>
 
-throttle.addEventListener(
-'input',
-()=>{
+<h3>Right Track</h3>
 
-  let val =
-  throttle.value;
+<button id="rf">Forward</button>
+<button id="rb">Backward</button>
 
-  client.publish(
-    TOPIC_THROTTLE,
-    val.toString()
-  );
+<h3>Turret</h3>
 
-});
+<button id="tl">Left</button>
+<button id="tr">Right</button>
 
-/* AUTO RETURN CENTER */
+<h3>Main Arm</h3>
 
-function resetThrottle(){
+<button id="au">Up</button>
+<button id="ad">Down</button>
 
-  throttle.value = 0;
+<h3>Stick Arm</h3>
 
-  client.publish(
-    TOPIC_THROTTLE,
-    '0'
-  );
-}
+<button id="su">Up</button>
+<button id="sd">Down</button>
 
-/* RELEASE */
+<h3>Bucket</h3>
 
-throttle.addEventListener(
-'mouseup',
-resetThrottle
-);
+<button id="bu">Up</button>
+<button id="bd">Down</button>
 
-throttle.addEventListener(
-'touchend',
-resetThrottle
-);
+<script>
 
-/* =========================
-   SAFETY STOP
-========================= */
+bind("lf","excavator/left/fwd");
+bind("lb","excavator/left/rev");
 
-window.addEventListener(
-'touchend',
-()=>{
+bind("rf","excavator/right/fwd");
+bind("rb","excavator/right/rev");
 
-  send('left_off');
-  send('right_off');
+bind("tl","excavator/turret/left");
+bind("tr","excavator/turret/right");
 
-});
+bind("au","excavator/arm/up");
+bind("ad","excavator/arm/down");
 
-window.addEventListener(
-'mouseup',
-()=>{
+bind("su","excavator/stick/up");
+bind("sd","excavator/stick/down");
 
-  send('left_off');
-  send('right_off');
-
-});
+bind("bu","excavator/bucket/up");
+bind("bd","excavator/bucket/down");
 
 </script>
 
 </body>
-
 </html>
