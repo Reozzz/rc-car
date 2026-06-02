@@ -1,60 +1,58 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 <meta charset="utf-8">
-<title>Excavator Remote</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>ESP32 Excavator Remote</title>
 
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
 <style>
+
 body{
-    font-family:Arial;
-    text-align:center;
+    font-family: Arial;
+    text-align: center;
+    margin: 10px;
+}
+
+h3{
+    margin-top: 25px;
 }
 
 button{
-    width:120px;
-    height:80px;
-    margin:4px;
-    font-size:18px;
+    width: 140px;
+    height: 80px;
+    margin: 5px;
+    font-size: 20px;
 }
+
+#status{
+    font-size:20px;
+    margin:15px;
+    font-weight:bold;
+}
+
+.connected{
+    color:green;
+}
+
+.disconnected{
+    color:red;
+}
+
 </style>
+
 </head>
+
 <body>
 
-<h2>Excavator Control</h2>
+<h2>ESP32 Excavator Remote</h2>
 
-<div id="status">Connecting...</div>
-
-<script>
-
-const client = mqtt.connect(
-'wss://broker.hivemq.com:8884/mqtt'
-);
-
-client.on('connect',()=>{
-    document.getElementById("status").innerHTML =
-      "MQTT Connected";
-});
-
-function bind(btnId,topic)
-{
-  const btn=document.getElementById(btnId);
-
-  btn.onpointerdown=()=>{
-      client.publish(topic,"1");
-  };
-
-  btn.onpointerup=()=>{
-      client.publish(topic,"0");
-  };
-
-  btn.onpointerleave=()=>{
-      client.publish(topic,"0");
-  };
-}
-
-</script>
+<div id="status" class="disconnected">
+MQTT Connecting...
+</div>
 
 <h3>Left Track</h3>
 
@@ -73,38 +71,184 @@ function bind(btnId,topic)
 
 <h3>Main Arm</h3>
 
-<button id="au">Up</button>
-<button id="ad">Down</button>
+<button id="au">UP</button>
+<button id="ad">DOWN</button>
 
 <h3>Stick Arm</h3>
 
-<button id="su">Up</button>
-<button id="sd">Down</button>
+<button id="su">UP</button>
+<button id="sd">DOWN</button>
 
 <h3>Bucket</h3>
 
-<button id="bu">Up</button>
-<button id="bd">Down</button>
+<button id="bu">UP</button>
+<button id="bd">DOWN</button>
 
 <script>
 
-bind("lf","excavator/left/fwd");
-bind("lb","excavator/left/rev");
+// MQTT Broker
+const client = mqtt.connect(
+    'wss://broker.hivemq.com:8884/mqtt'
+);
 
-bind("rf","excavator/right/fwd");
-bind("rb","excavator/right/rev");
+// 儲存每個按鈕 Timer
+const timers = {};
 
-bind("tl","excavator/turret/left");
-bind("tr","excavator/turret/right");
+// MQTT Connected
+client.on('connect', () => {
 
-bind("au","excavator/arm/up");
-bind("ad","excavator/arm/down");
+    console.log("MQTT Connected");
 
-bind("su","excavator/stick/up");
-bind("sd","excavator/stick/down");
+    const status = document.getElementById("status");
 
-bind("bu","excavator/bucket/up");
-bind("bd","excavator/bucket/down");
+    status.innerHTML = "MQTT Connected";
+    status.className = "connected";
+});
+
+// MQTT Lost
+client.on('close', () => {
+
+    const status = document.getElementById("status");
+
+    status.innerHTML = "MQTT Disconnected";
+    status.className = "disconnected";
+});
+
+// Publish
+function publish(topic,value)
+{
+    if(client.connected)
+    {
+        client.publish(topic,value);
+    }
+}
+
+// 綁定按鈕
+function bind(buttonId, topic)
+{
+    const btn = document.getElementById(buttonId);
+
+    function start()
+    {
+        publish(topic,"1");
+
+        if(timers[buttonId])
+        {
+            clearInterval(timers[buttonId]);
+        }
+
+        timers[buttonId] = setInterval(() => {
+
+            publish(topic,"1");
+
+        },200);
+    }
+
+    function stop()
+    {
+        if(timers[buttonId])
+        {
+            clearInterval(timers[buttonId]);
+            timers[buttonId] = null;
+        }
+
+        publish(topic,"0");
+    }
+
+    btn.addEventListener("pointerdown", start);
+
+    btn.addEventListener("pointerup", stop);
+
+    btn.addEventListener("pointerleave", stop);
+
+    btn.addEventListener("pointercancel", stop);
+
+    btn.addEventListener("touchend", stop);
+}
+
+//====================
+// Left Track
+//====================
+
+bind(
+    "lf",
+    "excavator/left/fwd"
+);
+
+bind(
+    "lb",
+    "excavator/left/rev"
+);
+
+//====================
+// Right Track
+//====================
+
+bind(
+    "rf",
+    "excavator/right/fwd"
+);
+
+bind(
+    "rb",
+    "excavator/right/rev"
+);
+
+//====================
+// Turret
+//====================
+
+bind(
+    "tl",
+    "excavator/turret/left"
+);
+
+bind(
+    "tr",
+    "excavator/turret/right"
+);
+
+//====================
+// Main Arm
+//====================
+
+bind(
+    "au",
+    "excavator/arm/up"
+);
+
+bind(
+    "ad",
+    "excavator/arm/down"
+);
+
+//====================
+// Stick Arm
+//====================
+
+bind(
+    "su",
+    "excavator/stick/up"
+);
+
+bind(
+    "sd",
+    "excavator/stick/down"
+);
+
+//====================
+// Bucket
+//====================
+
+bind(
+    "bu",
+    "excavator/bucket/up"
+);
+
+bind(
+    "bd",
+    "excavator/bucket/down"
+);
 
 </script>
 
