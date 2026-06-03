@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 
 <meta charset="utf-8">
@@ -13,11 +12,9 @@ content="width=device-width,initial-scale=1,user-scalable=no">
 
 <style>
 
-html,
-body{
+html,body{
     margin:0;
     padding:0;
-
     width:100%;
     height:100%;
 
@@ -26,9 +23,8 @@ body{
     touch-action:none;
     overscroll-behavior:none;
 
-    background:#f0f0f0;
-
-    font-family:Arial;
+    background:#f2f2f2;
+    font-family:Arial,sans-serif;
 }
 
 #status{
@@ -59,44 +55,32 @@ body{
 
 .grid{
     display:grid;
-
-    grid-template-columns:
-        100px
-        100px
-        100px;
-
-    grid-template-rows:
-        100px
-        100px
-        100px;
-
-    gap:5px;
-
+    grid-template-columns:100px 100px 100px;
+    grid-template-rows:100px 100px 100px;
+    gap:6px;
     justify-content:center;
 }
 
 button{
 
     border:none;
-
     border-radius:12px;
 
-    font-size:22px;
+    font-size:24px;
 
     background:white;
 
     box-shadow:
-      0 2px 6px rgba(0,0,0,0.2);
+    0 2px 6px rgba(0,0,0,0.2);
 
     user-select:none;
-
     -webkit-user-select:none;
 
     touch-action:none;
 }
 
 button:active{
-    background:#d8ebff;
+    background:#d7ebff;
 }
 
 .empty{
@@ -152,14 +136,13 @@ h3{
 
 <body>
 
-<div id="status"
-class="disconnected">
-
+<div id="status" class="disconnected">
 MQTT Connecting...
-
 </div>
 
 <div class="main">
+
+    <!-- LEFT SIDE -->
 
     <div class="joystick">
 
@@ -182,6 +165,8 @@ MQTT Connecting...
         </div>
 
     </div>
+
+    <!-- RIGHT SIDE -->
 
     <div class="joystick">
 
@@ -257,34 +242,33 @@ MQTT Connecting...
 
 <script>
 
+// =====================
+// MQTT
+// =====================
+
 const client =
 mqtt.connect(
 'wss://broker.hivemq.com:8884/mqtt'
 );
 
-const timers = {};
+const statusDiv =
+document.getElementById("status");
 
-client.on('connect',()=>{
+client.on("connect",()=>{
 
-    const s =
-    document.getElementById("status");
-
-    s.innerHTML =
+    statusDiv.innerHTML =
     "MQTT Connected";
 
-    s.className =
+    statusDiv.className =
     "connected";
 });
 
-client.on('close',()=>{
+client.on("close",()=>{
 
-    const s =
-    document.getElementById("status");
-
-    s.innerHTML =
+    statusDiv.innerHTML =
     "MQTT Disconnected";
 
-    s.className =
+    statusDiv.className =
     "disconnected";
 });
 
@@ -296,201 +280,137 @@ function publish(topic,value)
     }
 }
 
+// =====================
+// Multi Touch Manager
+// =====================
+
+const activeButtons = {};
+
+function startButton(id, topic)
+{
+    if(activeButtons[id])
+        return;
+
+    publish(topic,"1");
+
+    activeButtons[id] =
+    {
+        topic: topic,
+        timer: setInterval(()=>{
+
+            publish(topic,"1");
+
+        },100)
+    };
+}
+
+function stopButton(id)
+{
+    if(!activeButtons[id])
+        return;
+
+    clearInterval(
+        activeButtons[id].timer
+    );
+
+    publish(
+        activeButtons[id].topic,
+        "0"
+    );
+
+    delete activeButtons[id];
+}
+
 function stopAllButtons()
 {
-    Object.keys(timers)
+    Object.keys(activeButtons)
     .forEach(id=>{
 
         clearInterval(
-            timers[id]
+            activeButtons[id].timer
         );
 
-        timers[id] = null;
+        publish(
+            activeButtons[id].topic,
+            "0"
+        );
     });
 
-    publish(
-    "excavator/left/fwd","0");
-
-    publish(
-    "excavator/left/rev","0");
-
-    publish(
-    "excavator/right/fwd","0");
-
-    publish(
-    "excavator/right/rev","0");
-
-    publish(
-    "excavator/turret/left","0");
-
-    publish(
-    "excavator/turret/right","0");
-
-    publish(
-    "excavator/arm/up","0");
-
-    publish(
-    "excavator/arm/down","0");
-
-    publish(
-    "excavator/stick/up","0");
-
-    publish(
-    "excavator/stick/down","0");
-
-    publish(
-    "excavator/bucket/up","0");
-
-    publish(
-    "excavator/bucket/down","0");
+    for(const id in activeButtons)
+    {
+        delete activeButtons[id];
+    }
 }
 
-function bind(id,topic)
+// =====================
+// Bind
+// =====================
+
+function bind(id, topic)
 {
     const btn =
     document.getElementById(id);
 
-    function start()
-    {
-        publish(topic,"1");
-
-        clearInterval(
-            timers[id]
-        );
-
-        timers[id] =
-        setInterval(()=>{
-
-            publish(
-                topic,
-                "1"
-            );
-
-        },100);
-    }
-
-    function stop()
-    {
-        clearInterval(
-            timers[id]
-        );
-
-        timers[id] = null;
-
-        publish(topic,"0");
-    }
-
     btn.addEventListener(
         "pointerdown",
-        start
+        e=>{
+            e.preventDefault();
+            startButton(id,topic);
+        }
     );
 
     btn.addEventListener(
         "pointerup",
-        stop
+        e=>{
+            e.preventDefault();
+            stopButton(id);
+        }
     );
 
     btn.addEventListener(
         "pointercancel",
-        stop
+        ()=>{
+            stopButton(id);
+        }
     );
 
     btn.addEventListener(
-        "touchend",
-        stop
-    );
-
-    btn.addEventListener(
-        "touchcancel",
-        stop
+        "lostpointercapture",
+        ()=>{
+            stopButton(id);
+        }
     );
 }
 
-/* Global Safety */
+// =====================
+// Emergency Stop
+// =====================
 
-document.addEventListener(
-"pointerup",
-stopAllButtons
+window.addEventListener(
+    "blur",
+    stopAllButtons
 );
 
 document.addEventListener(
-"pointercancel",
-stopAllButtons
-);
-
-document.addEventListener(
-"touchend",
-stopAllButtons
-);
-
-document.addEventListener(
-"touchcancel",
-stopAllButtons
+    "visibilitychange",
+    ()=>{
+        if(document.hidden)
+        {
+            stopAllButtons();
+        }
+    }
 );
 
 window.addEventListener(
-"blur",
-stopAllButtons
+    "pagehide",
+    stopAllButtons
 );
 
-document.addEventListener(
-"visibilitychange",
-()=>{
-    if(document.hidden)
-    {
-        stopAllButtons();
-    }
-});
+// =====================
+// Topics
+// =====================
 
-/* Turret */
-
-bind(
-"tl",
-"excavator/turret/left"
-);
-
-bind(
-"tr",
-"excavator/turret/right"
-);
-
-/* Arm */
-
-bind(
-"au",
-"excavator/arm/up"
-);
-
-bind(
-"ad",
-"excavator/arm/down"
-);
-
-/* Stick */
-
-bind(
-"su",
-"excavator/stick/up"
-);
-
-bind(
-"sd",
-"excavator/stick/down"
-);
-
-/* Bucket */
-
-bind(
-"bu",
-"excavator/bucket/up"
-);
-
-bind(
-"bd",
-"excavator/bucket/down"
-);
-
-/* Left Track */
+// Left Track
 
 bind(
 "leftForward",
@@ -502,7 +422,7 @@ bind(
 "excavator/left/rev"
 );
 
-/* Right Track */
+// Right Track
 
 bind(
 "rightForward",
@@ -512,6 +432,54 @@ bind(
 bind(
 "rightBackward",
 "excavator/right/rev"
+);
+
+// Turret
+
+bind(
+"tl",
+"excavator/turret/left"
+);
+
+bind(
+"tr",
+"excavator/turret/right"
+);
+
+// Main Arm
+
+bind(
+"au",
+"excavator/arm/up"
+);
+
+bind(
+"ad",
+"excavator/arm/down"
+);
+
+// Stick Arm
+
+bind(
+"su",
+"excavator/stick/up"
+);
+
+bind(
+"sd",
+"excavator/stick/down"
+);
+
+// Bucket
+
+bind(
+"bu",
+"excavator/bucket/up"
+);
+
+bind(
+"bd",
+"excavator/bucket/down"
 );
 
 </script>
